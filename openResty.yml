@@ -1,0 +1,39 @@
+---
+- hosts: host1
+  sudo: yes
+  vars:
+    openrestyVersion: 1.5.12.1
+  tasks:
+
+  - name: update apt packages
+    command: apt-get update
+
+  - name: Install required packages
+    apt: pkg={{ item }} state=installed
+    with_items:
+    - perl
+    - build-essential
+    - libpcre3-dev
+    - libssl-dev
+    - libgeoip-dev
+
+  - name: Download the OpenResty tarball
+    get_url: url=http://openresty.org/download/ngx_openresty-{{ openrestyVersion }}.tar.gz dest=/tmp/openresty.tar.gz mode=0440
+
+  - name: Extract OpenResty tarball
+    command: chdir=/tmp/ /bin/tar zxf openresty.tar.gz
+
+  - name: Configure OpenResty
+    command: chdir=/tmp/ngx_openresty-{{ openrestyVersion }} /tmp/ngx_openresty-{{ openrestyVersion }}/configure
+
+  - name: Compile OpenResty
+    command: chdir=/tmp/ngx_openresty-{{ openrestyVersion }} make
+
+  - name: Install OpenResty
+    command: chdir=/tmp/ngx_openresty-{{ openrestyVersion }} make install
+
+  - name: Copy over the init script
+    copy: src=files/openresty-init dest=/etc/init.d/openresty mode=0755
+
+  - name: start nginx
+    command: chdir=/usr/local/openresty/nginx/sbin ./nginx
